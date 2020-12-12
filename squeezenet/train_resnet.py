@@ -19,7 +19,7 @@ import zipfile
 
 from argparse import ArgumentParser
 
-from model_resnet import RobustPoolResNet
+#from model_resnet import RobustPoolResNet
 from util import calculate_accuracy, calculate_accuracy_dataset
 
 
@@ -35,6 +35,42 @@ DEVICE = "cuda" if torch.cuda.is_available() else "cpu"
 DATASET_ROOT = Path("Architectural_Heritage_Elements_Dataset_128_splitted")
 ARCHIVE_NAME = Path("Architectural_Heritage_Elements_Dataset_128_splitted.zip")
 N_CLASSES = 10
+
+class RobustPoolResNet(nn.Module):
+    def __init__(self, num_classes, robust_type, alpha=1.0):
+        super().__init__()
+        
+        if robust_type != "vanilla":
+            self._model = torchvision.models.resnet18(pretrained=False, num_classes=num_classes)
+            self._model_name = "resnet18"
+
+            if robust_type == "quadratic":
+                self._model.avgpool = robustpool.RobustGlobalPool2d(robustpool.Quadratic, alpha=alpha)
+                self._model_name += "quadratic" # + str(alpha).replace('.', '_')
+            elif robust_type == "huber":
+                self._model.avgpool = robustpool.RobustGlobalPool2d(robustpool.Huber, alpha=alpha)
+                self._model_name += "huber"
+            elif robust_type == "pseudo-huber":
+                self._model.avgpool = robustpool.RobustGlobalPool2d(robustpool.PseudoHuber, alpha=alpha)
+                self._model_name += "pseudo_huber"
+            elif robust_type == "welsch":
+                self._model.avgpool = robustpool.RobustGlobalPool2d(robustpool.Welsch, alpha=alpha)
+                self._model_name += "welsch"
+            elif robust_type == "trunc-quadratic":
+                self._model.avgpool = robustpool.RobustGlobalPool2d(robustpool.TruncatedQuadratic, alpha=alpha)
+                self._model_name += "trunc_quadratic"
+
+            self._model_name += "_alpha_" + str(alpha).replace('.', '_')
+
+        else:
+            self._model = torchvision.models.resnet18(pretrained=False, num_classes=num_classes)
+            self._model_name = "resnet18_vanilla"
+    
+    def forward(self, x):
+        return self._model.forward(x)
+
+    def get_model_name(self):
+        return self._model_name
 
 
 def load_dataset():
@@ -112,7 +148,7 @@ def train_model(model, optimizer, criterion, n_epoch, batch_size, dataset, train
 
 
 def train_single_model(robust_type, lr, weight_decay, n_epoch, batch_size, train_dataset, test_dataset, alpha=1.0):
-    model = RobustPoolSqueezeNet(N_CLASSES, robust_type, alpha)
+    model = RobustPoolResNet(N_CLASSES, robust_type, alpha)
     model = model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
 
@@ -126,7 +162,7 @@ def train_single_model(robust_type, lr, weight_decay, n_epoch, batch_size, train
             train_percentage=0.7,
             backup_name="checkpoints/" + model.get_model_name() + ".pth.tar")
 
-    best_model = RobustPoolSqueezeNet(N_CLASSES, robust_type, alpha)
+    best_model = RobustPoolResNet(N_CLASSES, robust_type, alpha)
     best_model = best_model.to(DEVICE)
     best_model.load_state_dict(torch.load("checkpoints/" + model.get_model_name() + ".pth.tar"))
     best_model = best_model.eval()
@@ -163,10 +199,9 @@ def main(args):
                                test_dataset=test_dataset,
                                alpha=alpha)
 
-
 if __name__ == "__main__":
     parser = ArgumentParser("resnet18_train")
-    parser.add_argument("--type", type=str)
+    parser.add_argument("--type", type=str, default=None)
     parser.add_argument("--epochs", type=int, default=50)
     parser.add_argument("--batch", type=int, default=128)
     parser.add_argument("--lr", type=float, default=1e-3)
