@@ -1,5 +1,7 @@
 import numpy as np
 
+import random
+
 import torch
 
 from pathlib import Path
@@ -58,7 +60,6 @@ def evaluate_procedure(test_dataset, attack_fn, attack_params, attack_param_name
 
     # Vanilla model
     print("Evaluating vanilla model")
-    result["models"]["vanilla"]
     vanilla_acc, vanilla_attack_accs = evaluate_robustness("vanilla", 1.0, test_dataset, 
                                                            attack_fn, attack_params)
     result["models"]["vanilla"] = {"initial_acc": vanilla_acc, "attack_accs": vanilla_attack_accs}
@@ -85,13 +86,13 @@ def main():
 
     print("Gaussian noise")
     result_gn = evaluate_procedure(test_dataset, gaussian_noise_attack, sigmas, "sigmas")
-    with open('result_gn', 'w') as outfile:
+    with open('result_gn.json', 'w') as outfile:
         json.dump(result_gn, outfile)
 
     print("FGSM")
     result_fgsm = evaluate_procedure(test_dataset, fgsm_attack, epsilons, "epsilons")
-    with open('result_fgsm', 'w') as outfile:
-        json.dump(result_gn, outfile)
+    with open('result_fgsm.json', 'w') as outfile:
+        json.dump(result_fgsm, outfile)
 
 
 if __name__ == "__main__":
