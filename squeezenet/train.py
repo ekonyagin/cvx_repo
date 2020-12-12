@@ -112,10 +112,11 @@ def train_model(model, optimizer, criterion, n_epoch, batch_size, dataset, train
 
 
 def train_single_model(robust_type, lr, weight_decay, n_epoch, batch_size, train_dataset, test_dataset, alpha=1.0):
-    print("Training " + str(robust_type) + " SqueezeNet 1.0")
     model = RobustPoolSqueezeNet(N_CLASSES, robust_type, alpha)
     model = model.to(DEVICE)
     optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
+
+    print("Training " + model.get_model_name())
 
     train_model(model, optimizer, 
             criterion=nn.CrossEntropyLoss(),
@@ -136,6 +137,10 @@ def train_single_model(robust_type, lr, weight_decay, n_epoch, batch_size, train
 
 def main(args):
     train_dataset, test_dataset = load_dataset()
+
+    checkpoints_path = Path("checkpoints")
+    if not checkpoints_path.is_dir():
+        checkpoints_path.mkdir()
 
     if args.type == "vanilla":
         train_single_model(robust_type=args.type,

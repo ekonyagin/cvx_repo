@@ -158,4 +158,5 @@ dmypy.json
 
 # Project-specific
 squeezenet/Architectural_Heritage_Elements_Dataset_128_splitted
+squeezenet/Architectural_Heritage_Elements_Dataset_128_splitted.zip
 squeezenet/checkpoints
