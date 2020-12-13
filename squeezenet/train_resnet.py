@@ -164,11 +164,14 @@ def train_single_model(robust_type, lr, weight_decay, n_epoch, batch_size, train
 
     best_model = RobustPoolResNet(N_CLASSES, robust_type, alpha)
     best_model = best_model.to(DEVICE)
-    best_model.load_state_dict(torch.load("checkpoints/" + model.get_model_name() + ".pth.tar"))
-    best_model = best_model.eval()
+    try:
+        best_model.load_state_dict(torch.load("checkpoints/" + model.get_model_name() + ".pth.tar"))
+        best_model = best_model.eval()
 
-    test_acc = calculate_accuracy_dataset(best_model, test_dataset, batch_size, DEVICE)
-    print("Model trained, test accuracy: " + str(test_acc))
+        test_acc = calculate_accuracy_dataset(best_model, test_dataset, batch_size, DEVICE)
+        print("Model trained, test accuracy: " + str(test_acc))
+    except:
+        print(f"model {model.get_model_name()}.pth.tar not found")
 
 
 def main(args):
